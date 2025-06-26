@@ -163,56 +163,6 @@ export const Combat: React.FC<CombatProps> = ({
         </div>
       </div>
 
-      {/* Power Skills Status */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className={`p-2 rounded-lg border ${
-          powerSkills.rage.attackCount >= 2 ? 'border-red-500 bg-red-900/30' : 'border-gray-600 bg-gray-800/30'
-        }`}>
-          <div className="flex items-center gap-1 text-xs">
-            <Flame className="w-3 h-3 text-red-400" />
-            <span className="text-white font-semibold">RAGE</span>
-          </div>
-          <div className="text-xs text-gray-300">
-            {3 - powerSkills.rage.attackCount} attacks left
-          </div>
-          {powerSkills.rage.isActive && (
-            <div className="text-xs text-red-400 font-bold">ACTIVE!</div>
-          )}
-        </div>
-
-        <div className={`p-2 rounded-lg border ${
-          powerSkills.poison.attackCount >= 4 ? 'border-green-500 bg-green-900/30' : 'border-gray-600 bg-gray-800/30'
-        }`}>
-          <div className="flex items-center gap-1 text-xs">
-            <Droplets className="w-3 h-3 text-green-400" />
-            <span className="text-white font-semibold">POISON</span>
-          </div>
-          <div className="text-xs text-gray-300">
-            {5 - powerSkills.poison.attackCount} attacks left
-          </div>
-          {enemy.isPoisoned && (
-            <div className="text-xs text-green-400 font-bold">ENEMY POISONED!</div>
-          )}
-        </div>
-
-        <div className={`p-2 rounded-lg border ${
-          powerSkills.health.isActive ? 'border-blue-500 bg-blue-900/30' : 
-          powerSkills.health.isTriggered ? 'border-gray-500 bg-gray-800/30' : 'border-gray-600 bg-gray-800/30'
-        }`}>
-          <div className="flex items-center gap-1 text-xs">
-            <Plus className="w-3 h-3 text-blue-400" />
-            <span className="text-white font-semibold">HEALTH</span>
-          </div>
-          <div className="text-xs text-gray-300">
-            {powerSkills.health.isTriggered ? 'Used' : 'Ready at <30% HP'}
-          </div>
-          {powerSkills.health.isActive && (
-            <div className="text-xs text-blue-400 font-bold">
-              {powerSkills.health.attacksRemaining} heals left
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Health Bars */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
