@@ -22,7 +22,7 @@ export const Mining: React.FC<MiningProps> = ({ mining, gems, onMineGem, onPurch
   const [showShop, setShowShop] = useState(false);
   const [lastMineTime, setLastMineTime] = useState(0);
 
-  const GRID_SIZE = 8;
+  const GRID_SIZE = 5; // Changed from 8 to 5
   const MINE_COOLDOWN = 0; 
 
   // Generate new gem node
@@ -31,7 +31,7 @@ export const Mining: React.FC<MiningProps> = ({ mining, gems, onMineGem, onPurch
       x: Math.floor(Math.random() * GRID_SIZE),
       y: Math.floor(Math.random() * GRID_SIZE),
       clicks: 0,
-      maxClicks: 30,
+      maxClicks: 1, // Changed to 1 click = 1 gem
       id: Math.random().toString(36).substr(2, 9),
     };
     return newNode;
@@ -56,23 +56,9 @@ export const Mining: React.FC<MiningProps> = ({ mining, gems, onMineGem, onPurch
     const success = onMineGem(x, y);
     if (success) {
       setGemNodes(prev => {
-        const updated = prev.map(node => {
-          if (node.id === gemNode.id) {
-            const newClicks = node.clicks + mining.efficiency;
-            if (newClicks >= node.maxClicks) {
-              // Gem fully mined, remove it
-              return null;
-            }
-            return { ...node, clicks: newClicks };
-          }
-          return node;
-        }).filter(Boolean) as GemNode[];
-
-        // Add new gem node if current one was mined
-        if (updated.length < prev.length) {
-          updated.push(generateGemNode());
-        }
-
+        const updated = prev.filter(node => node.id !== gemNode.id);
+        // Add new gem node immediately
+        updated.push(generateGemNode());
         return updated;
       });
     }
@@ -84,7 +70,6 @@ export const Mining: React.FC<MiningProps> = ({ mining, gems, onMineGem, onPurch
       for (let x = 0; x < GRID_SIZE; x++) {
         const gemNode = gemNodes.find(node => node.x === x && node.y === y);
         const hasGem = !!gemNode;
-        const progress = gemNode ? (gemNode.clicks / gemNode.maxClicks) * 100 : 0;
 
         cells.push(
           <div
@@ -97,15 +82,9 @@ export const Mining: React.FC<MiningProps> = ({ mining, gems, onMineGem, onPurch
             }`}
           >
             {hasGem && (
-              <>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Gem className="w-4 h-4 sm:w-6 sm:h-6 text-purple-400 animate-pulse" />
-                </div>
-                <div 
-                  className="absolute bottom-0 left-0 right-0 bg-green-500 transition-all duration-300"
-                  style={{ height: `${progress}%` }}
-                />
-              </>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Gem className="w-4 h-4 sm:w-6 sm:h-6 text-purple-400 animate-pulse" />
+              </div>
             )}
           </div>
         );
@@ -156,7 +135,7 @@ export const Mining: React.FC<MiningProps> = ({ mining, gems, onMineGem, onPurch
           <Pickaxe className="w-6 h-6 sm:w-8 sm:h-8 text-orange-400" />
           <h2 className="text-xl sm:text-2xl font-bold text-white">Gem Mining</h2>
         </div>
-        <p className="text-gray-300 text-sm sm:text-base">Click gem nodes 15 times to mine them!</p>
+        <p className="text-gray-300 text-sm sm:text-base">Click gem nodes to mine them instantly!</p>
         
         <div className="flex items-center justify-center gap-4 mt-3">
           <div className="flex items-center gap-2 text-purple-300">
@@ -172,12 +151,12 @@ export const Mining: React.FC<MiningProps> = ({ mining, gems, onMineGem, onPurch
 
       {/* Mining Grid */}
       <div className="mb-4 sm:mb-6">
-        <h3 className="text-white font-semibold mb-3 text-center text-sm sm:text-base">Mining Area</h3>
-        <div className="grid grid-cols-8 gap-1 sm:gap-2 max-w-md mx-auto">
+        <h3 className="text-white font-semibold mb-3 text-center text-sm sm:text-base">Mining Area (5x5)</h3>
+        <div className="grid grid-cols-5 gap-1 sm:gap-2 max-w-sm mx-auto">
           {renderMiningGrid()}
         </div>
         <p className="text-center text-gray-400 text-xs sm:text-sm mt-3">
-          Purple gems appear randomly. Click them {15 - mining.efficiency + 1} times to mine!
+          Purple gems appear randomly. Click once to mine 1 gem!
         </p>
       </div>
 
@@ -256,7 +235,7 @@ export const Mining: React.FC<MiningProps> = ({ mining, gems, onMineGem, onPurch
 
             <div className="mt-6 text-center">
               <p className="text-orange-300 text-xs sm:text-sm">
-                Higher efficiency tools reduce the number of clicks needed to mine gems!
+                Higher efficiency tools give you more gems per click!
               </p>
             </div>
           </div>

@@ -13,10 +13,12 @@ import { PokyegMarket } from './components/PokyegMarket';
 import { Tutorial } from './components/Tutorial';
 import { CheatPanel } from './components/CheatPanel';
 import { Mining } from './components/Mining';
+import { PromoCode } from './components/PromoCode';
+import { FloatingIcons } from './components/FloatingIcons';
 import { FloatingText, ScreenShake } from './components/VisualEffects';
-import { Shield, Package, User, Play, RotateCcw, Brain, Crown, Trophy, Book, BarChart3, Settings, Pickaxe } from 'lucide-react';
+import { Shield, Package, User, Play, RotateCcw, Brain, Crown, Trophy, Book, BarChart3, Settings, Pickaxe, Gift } from 'lucide-react';
 
-type GameView = 'stats' | 'shop' | 'inventory' | 'research' | 'mining';
+type GameView = 'stats' | 'shop' | 'inventory' | 'research' | 'mining' | 'promo';
 type ModalView = 'achievements' | 'collection' | 'statistics' | 'gameMode' | 'pokyegMarket' | 'tutorial' | 'cheats' | 'resetConfirm' | null;
 
 function App() {
@@ -42,6 +44,8 @@ function App() {
     generateCheatItem,
     mineGem,
     purchaseMiningTool,
+    redeemPromoCode,
+    discardItem,
   } = useGameState();
 
   const [currentView, setCurrentView] = useState<GameView>('stats');
@@ -63,7 +67,8 @@ function App() {
   if (showWelcome && gameState.zone === 1 && gameState.coins === 100) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-        <div className="text-center max-w-md mx-auto">
+        <FloatingIcons />
+        <div className="text-center max-w-md mx-auto relative z-10">
           <div className="mb-6 sm:mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">🏰 Welcome to Hugoland! 🗡️</h1>
             <p className="text-purple-300 text-base sm:text-lg mb-4 sm:mb-6">
@@ -99,7 +104,7 @@ function App() {
   }
 
   const handleFooterClick = (type: 'tutorial' | 'cheats') => {
-    console.log('Footer clicked:', type); // Debug log
+    console.log('Footer clicked:', type);
     setCurrentModal(type);
   };
 
@@ -138,6 +143,32 @@ function App() {
               gems={gameState.gems}
             />
             
+            {/* Power Skills Display */}
+            {gameState.powerSkills.length > 0 && (
+              <div className="bg-gradient-to-r from-indigo-900 to-purple-900 p-3 sm:p-4 rounded-lg border border-indigo-500/50">
+                <h3 className="text-white font-bold mb-3 text-sm sm:text-lg flex items-center gap-2">
+                  ⚡ Active Power Skills
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {gameState.powerSkills.map((skill) => (
+                    <div key={skill.id} className="bg-black/30 p-2 rounded border border-purple-500/30">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-xs font-bold ${
+                          skill.rarity === 'mythical' ? 'text-red-400' :
+                          skill.rarity === 'legendary' ? 'text-yellow-400' :
+                          skill.rarity === 'epic' ? 'text-purple-400' :
+                          skill.rarity === 'rare' ? 'text-blue-400' : 'text-gray-400'
+                        }`}>
+                          {skill.rarity.toUpperCase()}
+                        </span>
+                      </div>
+                      <p className="text-white font-semibold text-xs">{skill.name}</p>
+                      <p className="text-gray-300 text-xs">{skill.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Knowledge Streak Display */}
             {gameState.knowledgeStreak.current > 0 && (
@@ -210,7 +241,7 @@ function App() {
           </div>
         );
       case 'shop':
-        return <Shop coins={gameState.coins} onOpenChest={openChest} isPremium={gameState.isPremium} />;
+        return <Shop coins={gameState.coins} onOpenChest={openChest} onDiscardItem={discardItem} isPremium={gameState.isPremium} />;
       case 'inventory':
         return (
           <Inventory
@@ -231,6 +262,7 @@ function App() {
             coins={gameState.coins}
             onUpgradeResearch={upgradeResearch}
             isPremium={gameState.isPremium}
+            powerSkills={gameState.powerSkills}
           />
         );
       case 'mining':
@@ -240,6 +272,13 @@ function App() {
             gems={gameState.gems}
             onMineGem={mineGem}
             onPurchaseTool={purchaseMiningTool}
+          />
+        );
+      case 'promo':
+        return (
+          <PromoCode
+            promoCodes={gameState.promoCodes}
+            onRedeemCode={redeemPromoCode}
           />
         );
       default:
@@ -353,7 +392,9 @@ function App() {
   const unlockedAchievements = gameState.achievements.filter(a => a.unlocked).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative">
+      <FloatingIcons />
+      
       {/* Visual Effects */}
       {visualEffects.showFloatingText && (
         <FloatingText
@@ -370,7 +411,7 @@ function App() {
       )}
 
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-800 via-violet-800 to-purple-800 shadow-2xl">
+      <div className="bg-gradient-to-r from-purple-800 via-violet-800 to-purple-800 shadow-2xl relative z-10">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-6">
           <div className="flex items-center justify-between mb-3 sm:mb-6">
             <div className="flex items-center gap-2">
@@ -418,6 +459,7 @@ function App() {
               { id: 'shop', label: 'Shop', icon: Package },
               { id: 'inventory', label: 'Inventory', icon: Shield },
               { id: 'mining', label: 'Mining', icon: Pickaxe },
+              { id: 'promo', label: 'Promo', icon: Gift },
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -440,14 +482,14 @@ function App() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 relative z-10">
         <div className="max-w-4xl mx-auto">
           {renderCurrentView()}
         </div>
       </div>
 
       {/* Footer */}
-      <div className="text-center py-3 sm:py-4 text-gray-400 text-xs sm:text-sm px-4">
+      <div className="text-center py-3 sm:py-4 text-gray-400 text-xs sm:text-sm px-4 relative z-10">
         Welcome to{' '}
         <button
           onClick={(e) => {

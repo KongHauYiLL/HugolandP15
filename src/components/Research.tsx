@@ -1,6 +1,6 @@
 import React from 'react';
-import { Research as ResearchType } from '../types/game';
-import { Brain, TrendingUp, Star, Crown, Coins } from 'lucide-react';
+import { Research as ResearchType, PowerSkill } from '../types/game';
+import { Brain, TrendingUp, Star, Crown, Coins, Zap } from 'lucide-react';
 import { calculateResearchBonus, calculateResearchCost } from '../utils/gameUtils';
 
 interface ResearchProps {
@@ -8,9 +8,10 @@ interface ResearchProps {
   coins: number;
   onUpgradeResearch: () => void;
   isPremium: boolean;
+  powerSkills: PowerSkill[];
 }
 
-export const Research: React.FC<ResearchProps> = ({ research, coins, onUpgradeResearch, isPremium }) => {
+export const Research: React.FC<ResearchProps> = ({ research, coins, onUpgradeResearch, isPremium, powerSkills }) => {
   const researchCost = calculateResearchCost(research.level, research.tier);
   const currentBonus = calculateResearchBonus(research.level, research.tier);
   const nextBonus = calculateResearchBonus(research.level + 1, research.tier);
@@ -68,7 +69,7 @@ export const Research: React.FC<ResearchProps> = ({ research, coins, onUpgradeRe
           <h2 className="text-xl sm:text-2xl font-bold text-white">Research Laboratory</h2>
           {isPremium && <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />}
         </div>
-        <p className="text-blue-300 text-sm sm:text-base">Unlock the power of knowledge</p>
+        <p className="text-blue-300 text-sm sm:text-base">Unlock the power of knowledge and gain Power Skills</p>
       </div>
 
       {/* Research Stats */}
@@ -98,6 +99,45 @@ export const Research: React.FC<ResearchProps> = ({ research, coins, onUpgradeRe
         </div>
       </div>
 
+      {/* Power Skills Display */}
+      {powerSkills.length > 0 && (
+        <div className="mb-4 sm:mb-6">
+          <h3 className="text-white font-semibold mb-3 text-center text-sm sm:text-base flex items-center justify-center gap-2">
+            <Zap className="w-5 h-5 text-yellow-400" />
+            Unlocked Power Skills
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {powerSkills.map((skill) => (
+              <div
+                key={skill.id}
+                className={`p-3 rounded-lg border-2 ${
+                  skill.rarity === 'mythical' ? 'border-red-500 bg-red-900/20' :
+                  skill.rarity === 'legendary' ? 'border-yellow-500 bg-yellow-900/20' :
+                  skill.rarity === 'epic' ? 'border-purple-500 bg-purple-900/20' :
+                  skill.rarity === 'rare' ? 'border-blue-500 bg-blue-900/20' :
+                  'border-gray-500 bg-gray-900/20'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs font-bold px-2 py-1 rounded ${
+                    skill.rarity === 'mythical' ? 'bg-red-600 text-white' :
+                    skill.rarity === 'legendary' ? 'bg-yellow-600 text-white' :
+                    skill.rarity === 'epic' ? 'bg-purple-600 text-white' :
+                    skill.rarity === 'rare' ? 'bg-blue-600 text-white' :
+                    'bg-gray-600 text-white'
+                  }`}>
+                    {skill.rarity.toUpperCase()}
+                  </span>
+                  <span className="text-gray-400 text-xs">Tier {skill.tier}</span>
+                </div>
+                <h4 className="text-white font-semibold text-sm mb-1">{skill.name}</h4>
+                <p className="text-gray-300 text-xs">{skill.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Research Tree */}
       <div className="mb-4 sm:mb-6">
         <h3 className="text-white font-semibold mb-3 text-center text-sm sm:text-base">
@@ -108,7 +148,7 @@ export const Research: React.FC<ResearchProps> = ({ research, coins, onUpgradeRe
         {progressInTier === 9 && (
           <div className="mt-4 p-3 bg-gradient-to-r from-purple-900 to-pink-900 rounded-lg border border-purple-500">
             <p className="text-center text-purple-300 font-semibold text-sm sm:text-base">
-              🎉 Next upgrade unlocks Tier {research.tier + 2} with +15% bonus to all stats!
+              🎉 Next upgrade unlocks Tier {research.tier + 2} with +15% bonus and a new Power Skill!
             </p>
           </div>
         )}
@@ -125,6 +165,11 @@ export const Research: React.FC<ResearchProps> = ({ research, coins, onUpgradeRe
             <p className="text-blue-300 text-xs">
               Cost resets to 150 at new tier
             </p>
+            {progressInTier === 9 && (
+              <p className="text-yellow-300 text-xs font-bold">
+                ⚡ New Power Skill at next tier!
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2 text-yellow-300">
             <Coins className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -149,7 +194,7 @@ export const Research: React.FC<ResearchProps> = ({ research, coins, onUpgradeRe
             Research boosts ATK, DEF, and HP by the bonus percentage
           </p>
           <p className="text-xs text-gray-400">
-            Every 10 levels grants an additional 15% bonus and unlocks a new tier
+            Every 10 levels grants an additional 15% bonus and unlocks a new Power Skill
           </p>
         </div>
       </div>

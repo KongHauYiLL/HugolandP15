@@ -1,24 +1,45 @@
 import React, { useState } from 'react';
 import { ChestReward, Weapon, Armor } from '../types/game';
-import { Package, Coins, Gem, X } from 'lucide-react';
+import { Package, Coins, Gem, X, Trash2 } from 'lucide-react';
 import { getRarityColor, getRarityBorder, getRarityGlow } from '../utils/gameUtils';
 
 interface ShopProps {
   coins: number;
   onOpenChest: (cost: number) => ChestReward | null;
+  onDiscardItem: (itemId: string, type: 'weapon' | 'armor') => void;
   isPremium: boolean;
 }
 
-export const Shop: React.FC<ShopProps> = ({ coins, onOpenChest, isPremium }) => {
+export const Shop: React.FC<ShopProps> = ({ coins, onOpenChest, onDiscardItem, isPremium }) => {
   const [lastReward, setLastReward] = useState<ChestReward | null>(null);
   const [isOpening, setIsOpening] = useState(false);
   const [showRewardModal, setShowRewardModal] = useState(false);
 
   const chests = [
-    { name: 'Basic Chest', cost: 50, description: 'Common rewards' },
-    { name: 'Rare Chest', cost: 150, description: 'Better rewards' },
-    { name: 'Epic Chest', cost: 400, description: 'Great rewards' },
-    { name: 'Legendary Chest', cost: 1000, description: 'Amazing rewards' },
+    { 
+      name: 'Basic Chest', 
+      cost: 50, 
+      description: 'Common rewards',
+      rarityInfo: '60% Common, 30% Rare, 8% Epic, 2% Legendary'
+    },
+    { 
+      name: 'Rare Chest', 
+      cost: 150, 
+      description: 'Better rewards',
+      rarityInfo: '50% Rare, 35% Epic, 13% Legendary, 2% Mythical'
+    },
+    { 
+      name: 'Epic Chest', 
+      cost: 400, 
+      description: 'Great rewards',
+      rarityInfo: '60% Epic, 30% Legendary, 10% Mythical'
+    },
+    { 
+      name: 'Legendary Chest', 
+      cost: 1000, 
+      description: 'Amazing rewards',
+      rarityInfo: '70% Legendary, 30% Mythical'
+    },
   ];
 
   const handleOpenChest = async (cost: number) => {
@@ -38,6 +59,11 @@ export const Shop: React.FC<ShopProps> = ({ coins, onOpenChest, isPremium }) => 
   const closeRewardModal = () => {
     setShowRewardModal(false);
     setLastReward(null);
+  };
+
+  const handleDiscardItem = (item: Weapon | Armor) => {
+    const type = 'baseAtk' in item ? 'weapon' : 'armor';
+    onDiscardItem(item.id, type);
   };
 
   return (
@@ -63,6 +89,7 @@ export const Shop: React.FC<ShopProps> = ({ coins, onOpenChest, isPremium }) => 
               <div className="flex-1 min-w-0">
                 <h3 className="text-white font-semibold text-sm sm:text-base truncate">{chest.name}</h3>
                 <p className="text-xs sm:text-sm text-gray-300">{chest.description}</p>
+                <p className="text-xs text-gray-400 mt-1">{chest.rarityInfo}</p>
               </div>
             </div>
             <div className="flex items-center justify-between">
@@ -144,7 +171,10 @@ export const Shop: React.FC<ShopProps> = ({ coins, onOpenChest, isPremium }) => 
                           ? `ATK: ${(item as Weapon).baseAtk}` 
                           : `DEF: ${(item as Armor).baseDef}`}
                       </p>
-                      <div className="flex items-center justify-center gap-4 text-xs">
+                      <p className="text-gray-400 text-xs mb-3">
+                        Durability: {item.durability}/{item.maxDurability}
+                      </p>
+                      <div className="flex items-center justify-center gap-4 text-xs mb-3">
                         <div className="flex items-center gap-1 text-yellow-400">
                           <Coins className="w-3 h-3" />
                           <span>Sell: {(item as any).sellPrice}</span>
@@ -154,6 +184,15 @@ export const Shop: React.FC<ShopProps> = ({ coins, onOpenChest, isPremium }) => 
                           <span>Upgrade: {(item as any).upgradeCost}</span>
                         </div>
                       </div>
+                      
+                      {/* Discard Button */}
+                      <button
+                        onClick={() => handleDiscardItem(item)}
+                        className="w-full py-1 bg-red-600 text-white text-xs rounded hover:bg-red-500 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Discard Item
+                      </button>
                     </div>
                   </div>
                 ))

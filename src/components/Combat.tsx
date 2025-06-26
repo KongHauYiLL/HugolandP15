@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Enemy, PowerSkills } from '../types/game';
+import { Enemy, PowerSkill } from '../types/game';
 import { Sword, Shield, Heart, Brain, Clock, Zap, Skull, Flame, Droplets, Plus } from 'lucide-react';
 import { TriviaQuestion, getQuestionByZone } from '../utils/triviaQuestions';
 
@@ -24,7 +24,7 @@ interface CombatProps {
     best: number;
     multiplier: number;
   };
-  powerSkills: PowerSkills;
+  powerSkills: PowerSkill[];
 }
 
 export const Combat: React.FC<CombatProps> = ({ 
@@ -42,17 +42,27 @@ export const Combat: React.FC<CombatProps> = ({
   const [timeLeft, setTimeLeft] = useState(5);
   const [showResult, setShowResult] = useState(false);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(null);
+  const [showFreeAnswer, setShowFreeAnswer] = useState(false);
 
   const questionTime = (gameMode.current === 'blitz' || gameMode.current === 'bloodlust') ? 3 : 5;
+  
+  // Check for scholar power skill (extra time)
+  const scholarSkill = powerSkills.find(skill => skill.effect.type === 'scholar' && skill.isActive);
+  const bonusTime = scholarSkill ? scholarSkill.effect.value || 0 : 0;
+  const totalQuestionTime = questionTime + bonusTime;
+
+  // Check for free answer power skill
+  const freeAnswerSkill = powerSkills.find(skill => skill.effect.type === 'free_answer' && skill.isActive);
 
   useEffect(() => {
     const question = getQuestionByZone(enemy.zone);
     setCurrentQuestion(question);
     setSelectedAnswer(null);
-    setTimeLeft(questionTime);
+    setTimeLeft(totalQuestionTime);
     setShowResult(false);
     setLastAnswerCorrect(null);
-  }, [enemy, questionTime]);
+    setShowFreeAnswer(freeAnswerSkill ? true : false);
+  }, [enemy, totalQuestionTime, freeAnswerSkill]);
 
   useEffect(() => {
     if (!currentQuestion || isAnswering || showResult) return;
@@ -87,9 +97,10 @@ export const Combat: React.FC<CombatProps> = ({
       setCurrentQuestion(newQuestion);
       setSelectedAnswer(null);
       setIsAnswering(false);
-      setTimeLeft(questionTime);
+      setTimeLeft(totalQuestionTime);
       setShowResult(false);
       setLastAnswerCorrect(null);
+      setShowFreeAnswer(false); // Only show free answer for first question
     }, 2000);
   };
 
@@ -163,56 +174,36 @@ export const Combat: React.FC<CombatProps> = ({
         </div>
       </div>
 
-      {/* Power Skills Status */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className={`p-2 rounded-lg border ${
-          powerSkills.rage.attackCount >= 2 ? 'border-red-500 bg-red-900/30' : 'border-gray-600 bg-gray-800/30'
-        }`}>
-          <div className="flex items-center gap-1 text-xs">
-            <Flame className="w-3 h-3 text-red-400" />
-            <span className="text-white font-semibold">RAGE</span>
+      {/* Active Power Skills */}
+      {powerSkills.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-white font-semibold mb-2 text-sm">⚡ Active Power Skills</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {powerSkills.slice(0, 6).map((skill) => (
+              <div
+                key={skill.id}
+                className={`p-2 rounded border text-xs ${
+                  skill.rarity === 'mythical' ? 'border-red-500 bg-red-900/20' :
+                  skill.rarity === 'legendary' ? 'border-yellow-500 bg-yellow-900/20' :
+                  skill.rarity === 'epic' ? 'border-purple-500 bg-purple-900/20' :
+                  skill.rarity === 'rare' ? 'border-blue-500 bg-blue-900/20' :
+                  'border-gray-500 bg-gray-900/20'
+                }`}
+              >
+                <p className="text-white font-semibold truncate">{skill.name}</p>
+                <p className={`text-xs ${
+                  skill.rarity === 'mythical' ? 'text-red-400' :
+                  skill.rarity === 'legendary' ? 'text-yellow-400' :
+                  skill.rarity === 'epic' ? 'text-purple-400' :
+                  skill.rarity === 'rare' ? 'text-blue-400' : 'text-gray-400'
+                }`}>
+                  {skill.rarity.toUpperCase()}
+                </p>
+              </div>
+            ))}
           </div>
-          <div className="text-xs text-gray-300">
-            {3 - powerSkills.rage.attackCount} attacks left
-          </div>
-          {powerSkills.rage.isActive && (
-            <div className="text-xs text-red-400 font-bold">ACTIVE!</div>
-          )}
         </div>
-
-        <div className={`p-2 rounded-lg border ${
-          powerSkills.poison.attackCount >= 4 ? 'border-green-500 bg-green-900/30' : 'border-gray-600 bg-gray-800/30'
-        }`}>
-          <div className="flex items-center gap-1 text-xs">
-            <Droplets className="w-3 h-3 text-green-400" />
-            <span className="text-white font-semibold">POISON</span>
-          </div>
-          <div className="text-xs text-gray-300">
-            {5 - powerSkills.poison.attackCount} attacks left
-          </div>
-          {enemy.isPoisoned && (
-            <div className="text-xs text-green-400 font-bold">ENEMY POISONED!</div>
-          )}
-        </div>
-
-        <div className={`p-2 rounded-lg border ${
-          powerSkills.health.isActive ? 'border-blue-500 bg-blue-900/30' : 
-          powerSkills.health.isTriggered ? 'border-gray-500 bg-gray-800/30' : 'border-gray-600 bg-gray-800/30'
-        }`}>
-          <div className="flex items-center gap-1 text-xs">
-            <Plus className="w-3 h-3 text-blue-400" />
-            <span className="text-white font-semibold">HEALTH</span>
-          </div>
-          <div className="text-xs text-gray-300">
-            {powerSkills.health.isTriggered ? 'Used' : 'Ready at <30% HP'}
-          </div>
-          {powerSkills.health.isActive && (
-            <div className="text-xs text-blue-400 font-bold">
-              {powerSkills.health.attacksRemaining} heals left
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Health Bars */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
@@ -302,6 +293,15 @@ export const Combat: React.FC<CombatProps> = ({
             {currentQuestion.question}
           </p>
 
+          {/* Free Answer Hint */}
+          {showFreeAnswer && (
+            <div className="mb-3 p-2 bg-blue-900/50 border border-blue-500/50 rounded">
+              <p className="text-blue-300 text-xs text-center">
+                🔮 Oracle's Wisdom: The correct answer is highlighted in blue!
+              </p>
+            </div>
+          )}
+
           {/* Answer Options */}
           <div className="grid grid-cols-1 gap-2 sm:gap-3">
             {currentQuestion.options.map((option, index) => {
@@ -317,6 +317,8 @@ export const Combat: React.FC<CombatProps> = ({
                 }
               } else if (selectedAnswer === index) {
                 buttonClass = 'bg-blue-600 text-white';
+              } else if (showFreeAnswer && index === currentQuestion.correctAnswer) {
+                buttonClass = 'bg-blue-700 hover:bg-blue-600 text-white border-2 border-blue-400';
               }
 
               return (
@@ -365,7 +367,7 @@ export const Combat: React.FC<CombatProps> = ({
           <p className={`text-xs font-semibold ${
             gameMode.current === 'blitz' || gameMode.current === 'bloodlust' ? 'text-yellow-400' : 'text-red-400'
           }`}>
-            ⚠️ Only {questionTime} seconds to answer!
+            ⚠️ Only {totalQuestionTime} seconds to answer!
           </p>
         </div>
       </div>

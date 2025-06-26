@@ -14,9 +14,10 @@ export interface GameState {
   knowledgeStreak: KnowledgeStreak;
   gameMode: GameMode;
   statistics: Statistics;
-  powerSkills: PowerSkills;
+  powerSkills: PowerSkill[];
   cheats: CheatSettings;
   mining: Mining;
+  promoCodes: PromoCodeState;
 }
 
 export interface PlayerStats {
@@ -51,6 +52,8 @@ export interface Weapon {
   upgradeCost: number;
   sellPrice: number;
   isChroma?: boolean;
+  durability: number;
+  maxDurability: number;
 }
 
 export interface Armor {
@@ -62,6 +65,8 @@ export interface Armor {
   upgradeCost: number;
   sellPrice: number;
   isChroma?: boolean;
+  durability: number;
+  maxDurability: number;
 }
 
 export interface Enemy {
@@ -143,21 +148,24 @@ export interface Statistics {
   sessionStartTime: Date;
 }
 
-export interface PowerSkills {
-  rage: {
-    attackCount: number;
-    isActive: boolean;
-    damageBonus: number;
-  };
-  poison: {
-    attackCount: number;
-    isActive: boolean;
-  };
-  health: {
-    isTriggered: boolean;
-    isActive: boolean;
-    attacksRemaining: number;
-  };
+export interface PowerSkill {
+  id: string;
+  name: string;
+  description: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'mythical';
+  tier: number;
+  isActive: boolean;
+  effect: PowerSkillEffect;
+}
+
+export interface PowerSkillEffect {
+  type: 'poison' | 'guardian' | 'crown' | 'hp_boost' | 'war_veteran' | 'dodge' | 'free_answer' | 'heal' | 'shield' | 'crit' | 'vampire' | 'rage' | 'lucky' | 'scholar' | 'berserker' | 'fortress' | 'swift' | 'midas' | 'phoenix' | 'time_warp' | 'elemental' | 'assassin';
+  value?: number;
+  duration?: number;
+  cooldown?: number;
+  currentCooldown?: number;
+  stacks?: number;
+  maxStacks?: number;
 }
 
 export interface CheatSettings {
@@ -184,4 +192,21 @@ export interface MiningTool {
   cost: number;
   efficiency: number;
   owned: boolean;
+}
+
+export interface PromoCodeState {
+  usedCodes: string[];
+  availableCodes: PromoCode[];
+}
+
+export interface PromoCode {
+  code: string;
+  name: string;
+  description: string;
+  rewards: {
+    coins?: number;
+    gems?: number;
+    items?: (Weapon | Armor)[];
+  };
+  isUsed: boolean;
 }

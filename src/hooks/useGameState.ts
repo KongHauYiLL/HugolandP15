@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { GameState, PlayerStats, Inventory, Enemy, Weapon, Armor, ChestReward, Research, Achievement, CollectionBook, KnowledgeStreak, GameMode, Statistics, PowerSkills, CheatSettings, Mining } from '../types/game';
-import { generateWeapon, generateArmor, generateEnemy, generateMythicalWeapon, generateMythicalArmor, calculateResearchBonus, calculateResearchCost } from '../utils/gameUtils';
+import { GameState, PlayerStats, Inventory, Enemy, Weapon, Armor, ChestReward, Research, Achievement, CollectionBook, KnowledgeStreak, GameMode, Statistics, PowerSkill, CheatSettings, Mining, PromoCodeState, PromoCode } from '../types/game';
+import { generateWeapon, generateArmor, generateEnemy, generateMythicalWeapon, generateMythicalArmor, calculateResearchBonus, calculateResearchCost, getChestRarityWeights } from '../utils/gameUtils';
 import { checkAchievements, initializeAchievements } from '../utils/achievements';
+import { getPowerSkillForTier } from '../utils/powerSkills';
 import AsyncStorage from '../utils/storage';
 
 const STORAGE_KEY = 'hugoland_game_state';
@@ -69,23 +70,6 @@ const initialStatistics: Statistics = {
   sessionStartTime: new Date(),
 };
 
-const initialPowerSkills: PowerSkills = {
-  rage: {
-    attackCount: 0,
-    isActive: false,
-    damageBonus: 0,
-  },
-  poison: {
-    attackCount: 0,
-    isActive: false,
-  },
-  health: {
-    isTriggered: false,
-    isActive: false,
-    attacksRemaining: 0,
-  },
-};
-
 const initialCheats: CheatSettings = {
   infiniteCoins: false,
   infiniteGems: false,
@@ -101,6 +85,22 @@ const initialMining: Mining = {
     mythical_pickaxe: false,
   },
   totalGemsMined: 0,
+};
+
+const initialPromoCodes: PromoCodeState = {
+  usedCodes: [],
+  availableCodes: [
+    {
+      code: 'TNT',
+      name: 'Explosive Start',
+      description: 'Get a head start with bonus resources!',
+      rewards: {
+        coins: 500,
+        gems: 50,
+      },
+      isUsed: false,
+    },
+  ],
 };
 
 const initialGameState: GameState = {
@@ -119,9 +119,10 @@ const initialGameState: GameState = {
   knowledgeStreak: initialKnowledgeStreak,
   gameMode: initialGameMode,
   statistics: initialStatistics,
-  powerSkills: initialPowerSkills,
+  powerSkills: [],
   cheats: initialCheats,
   mining: initialMining,
+  promoCodes: initialPromoCodes,
 };
 
 export const useGameState = () => {
@@ -161,7 +162,7 @@ export const useGameState = () => {
           gemsEarned: prev.statistics.gemsEarned + 2,
         },
       }));
-    }, 60000); // 60 seconds
+    }, 60000);
 
     return () => clearInterval(interval);
   }, []);
@@ -193,9 +194,10 @@ export const useGameState = () => {
             },
             research: parsedState.research || initialResearch,
             isPremium: parsedState.isPremium || parsedState.zone >= 50,
-            powerSkills: parsedState.powerSkills || initialPowerSkills,
+            powerSkills: parsedState.powerSkills || [],
             cheats: parsedState.cheats || initialCheats,
             mining: parsedState.mining || initialMining,
+            promoCodes: parsedState.promoCodes || initialPromoCodes,
           });
         } else {
           setGameState({
@@ -279,7 +281,7 @@ export const useGameState = () => {
       const countKey = isWeapon ? 'totalWeaponsFound' : 'totalArmorFound';
       
       if (prev.collectionBook[collectionKey][item.name]) {
-        return prev; // Already discovered
+        return prev;
       }
 
       return {
@@ -308,7 +310,7 @@ export const useGameState = () => {
     setGameState(prev => {
       const newCurrent = correct ? prev.knowledgeStreak.current + 1 : 0;
       const newBest = Math.max(prev.knowledgeStreak.best, newCurrent);
-      const newMultiplier = Math.min(1 + Math.floor(newCurrent / 5) * 0.1, 2); // Max 2x multiplier
+      const newMultiplier = Math.min(1 + Math.floor(newCurrent / 5) * 0.1, 2);
 
       if (correct && newCurrent > 0 && newCurrent % 5 === 0) {
         triggerVisualEffect('text', { 
@@ -352,7 +354,6 @@ export const useGameState = () => {
       const newUnlocks = checkAchievements(prev);
       
       if (newUnlocks.length > 0) {
-        // Award achievement rewards
         let bonusCoins = 0;
         let bonusGems = 0;
         
@@ -370,7 +371,6 @@ export const useGameState = () => {
           });
         }
 
-        // Update achievements list
         const updatedAchievements = prev.achievements.map(existing => {
           const newUnlock = newUnlocks.find(nu => nu.id === existing.id);
           return newUnlock || existing;
@@ -400,6 +400,25 @@ export const useGameState = () => {
       const researchBonus = calculateResearchBonus(prev.research.level, prev.research.tier);
       let bonusMultiplier = 1 + (researchBonus / 100);
 
+      // Apply power skill bonuses
+      let powerSkillAtkBonus = 0;
+      let powerSkillDefBonus = 0;
+      let powerSkillHpMultiplier = 1;
+
+      prev.powerSkills.forEach(skill => {
+        if (!skill.isActive) return;
+        
+        switch (skill.effect.type) {
+          case 'crown':
+            powerSkillAtkBonus += skill.effect.value!;
+            powerSkillDefBonus += skill.effect.value!;
+            break;
+          case 'hp_boost':
+            powerSkillHpMultiplier *= skill.effect.value!;
+            break;
+        }
+      });
+
       // Apply game mode modifiers
       let atkMultiplier = 1;
       let defMultiplier = 1;
@@ -407,20 +426,20 @@ export const useGameState = () => {
 
       switch (prev.gameMode.current) {
         case 'bloodlust':
-          atkMultiplier = 2; // +100% ATK
-          defMultiplier = 0.5; // -50% DEF
-          hpMultiplier = 0.5; // -50% HP
+          atkMultiplier = 2;
+          defMultiplier = 0.5;
+          hpMultiplier = 0.5;
           break;
         case 'crazy':
-          atkMultiplier = 0.5; // -50% ATK
-          defMultiplier = 0.5; // -50% DEF
-          hpMultiplier = 0.5; // -50% HP
+          atkMultiplier = 0.5;
+          defMultiplier = 0.5;
+          hpMultiplier = 0.5;
           break;
       }
 
-      const finalAtk = Math.floor((prev.playerStats.baseAtk + weaponAtk) * bonusMultiplier * atkMultiplier);
-      const finalDef = Math.floor((prev.playerStats.baseDef + armorDef) * bonusMultiplier * defMultiplier);
-      const finalMaxHp = Math.floor(prev.playerStats.baseHp * bonusMultiplier * hpMultiplier);
+      const finalAtk = Math.floor(((prev.playerStats.baseAtk + weaponAtk) * bonusMultiplier + powerSkillAtkBonus) * atkMultiplier);
+      const finalDef = Math.floor(((prev.playerStats.baseDef + armorDef) * bonusMultiplier + powerSkillDefBonus) * defMultiplier);
+      const finalMaxHp = Math.floor(prev.playerStats.baseHp * bonusMultiplier * hpMultiplier * powerSkillHpMultiplier);
 
       return {
         ...prev,
@@ -458,28 +477,26 @@ export const useGameState = () => {
   }, []);
 
   const generateCheatItem = useCallback(() => {
-    // This function can be implemented later for cheat functionality
     console.log('Generate cheat item functionality not implemented yet');
   }, []);
 
   const mineGem = useCallback((x: number, y: number): boolean => {
-    // Mining logic - returns true if successful
     setGameState(prev => ({
       ...prev,
-      gems: prev.gems + 1,
+      gems: prev.gems + prev.mining.efficiency,
       mining: {
         ...prev.mining,
-        totalGemsMined: prev.mining.totalGemsMined + 1,
+        totalGemsMined: prev.mining.totalGemsMined + prev.mining.efficiency,
       },
       statistics: {
         ...prev.statistics,
-        gemsEarned: prev.statistics.gemsEarned + 1,
+        gemsEarned: prev.statistics.gemsEarned + prev.mining.efficiency,
       },
     }));
 
-    triggerVisualEffect('text', { text: '+1 Gem!', color: 'text-purple-400' });
+    triggerVisualEffect('text', { text: `+${gameState.mining.efficiency} Gem${gameState.mining.efficiency > 1 ? 's' : ''}!`, color: 'text-purple-400' });
     return true;
-  }, [triggerVisualEffect]);
+  }, [triggerVisualEffect, gameState.mining.efficiency]);
 
   const purchaseMiningTool = useCallback((toolId: string): boolean => {
     const toolCosts = {
@@ -521,6 +538,82 @@ export const useGameState = () => {
     triggerVisualEffect('text', { text: 'Mining Tool Purchased!', color: 'text-orange-400' });
     return true;
   }, [triggerVisualEffect]);
+
+  const redeemPromoCode = useCallback((code: string): boolean => {
+    setGameState(prev => {
+      if (prev.promoCodes.usedCodes.includes(code)) {
+        return prev;
+      }
+
+      const promoCode = prev.promoCodes.availableCodes.find(pc => pc.code === code);
+      if (!promoCode) {
+        return prev;
+      }
+
+      const updatedPromoCodes = {
+        ...prev.promoCodes,
+        usedCodes: [...prev.promoCodes.usedCodes, code],
+        availableCodes: prev.promoCodes.availableCodes.map(pc => 
+          pc.code === code ? { ...pc, isUsed: true } : pc
+        ),
+      };
+
+      let newCoins = prev.coins;
+      let newGems = prev.gems;
+      let newWeapons = [...prev.inventory.weapons];
+      let newArmor = [...prev.inventory.armor];
+
+      if (promoCode.rewards.coins) {
+        newCoins += promoCode.rewards.coins;
+      }
+      if (promoCode.rewards.gems) {
+        newGems += promoCode.rewards.gems;
+      }
+      if (promoCode.rewards.items) {
+        promoCode.rewards.items.forEach(item => {
+          if ('baseAtk' in item) {
+            newWeapons.push(item as Weapon);
+          } else {
+            newArmor.push(item as Armor);
+          }
+        });
+      }
+
+      triggerVisualEffect('text', { 
+        text: `Promo Code Redeemed! +${promoCode.rewards.coins || 0} coins, +${promoCode.rewards.gems || 0} gems`, 
+        color: 'text-green-400' 
+      });
+
+      return {
+        ...prev,
+        coins: newCoins,
+        gems: newGems,
+        inventory: {
+          ...prev.inventory,
+          weapons: newWeapons,
+          armor: newArmor,
+        },
+        promoCodes: updatedPromoCodes,
+      };
+    });
+
+    return true;
+  }, [triggerVisualEffect]);
+
+  const discardItem = useCallback((itemId: string, type: 'weapon' | 'armor') => {
+    setGameState(prev => ({
+      ...prev,
+      inventory: {
+        ...prev.inventory,
+        weapons: type === 'weapon' 
+          ? prev.inventory.weapons.filter(w => w.id !== itemId)
+          : prev.inventory.weapons,
+        armor: type === 'armor'
+          ? prev.inventory.armor.filter(a => a.id !== itemId)
+          : prev.inventory.armor,
+      },
+    }));
+  }, []);
 
   const equipWeapon = useCallback((weapon: Weapon) => {
     setGameState(prev => ({
@@ -644,8 +737,17 @@ export const useGameState = () => {
       const newLevel = prev.research.level + 1;
       const newTier = Math.floor(newLevel / 10);
       
+      let newPowerSkills = [...prev.powerSkills];
+      
       if (newTier > prev.research.tier) {
         triggerVisualEffect('text', { text: `Research Tier ${newTier + 1} Unlocked!`, color: 'text-purple-400' });
+        
+        // Unlock new power skill for this tier
+        const newPowerSkill = getPowerSkillForTier(newTier + 1);
+        if (newPowerSkill) {
+          newPowerSkills.push(newPowerSkill);
+          triggerVisualEffect('text', { text: `New Power Skill: ${newPowerSkill.name}!`, color: 'text-yellow-400' });
+        }
       }
 
       return {
@@ -656,6 +758,7 @@ export const useGameState = () => {
           tier: newTier,
           totalSpent: prev.research.totalSpent + researchCost,
         },
+        powerSkills: newPowerSkills,
       };
     });
     updatePlayerStats();
@@ -665,35 +768,31 @@ export const useGameState = () => {
   const openChest = useCallback((chestCost: number): ChestReward | null => {
     if (gameState.coins < chestCost && !gameState.cheats.infiniteCoins) return null;
 
-    // Improved loot rates - more rare items
-    const numItems = Math.floor(Math.random() * 3) + 2; // 2-4 items
-    const bonusGems = Math.floor(Math.random() * 15) + 10; // 10-24 gems
+    const numItems = Math.floor(Math.random() * 3) + 2;
+    const bonusGems = Math.floor(Math.random() * 15) + 10;
     const items: (Weapon | Armor)[] = [];
+
+    // Get rarity weights based on chest cost
+    const rarityWeights = getChestRarityWeights(chestCost);
+    const rarities = ['common', 'rare', 'epic', 'legendary', 'mythical'];
 
     for (let i = 0; i < numItems; i++) {
       const isWeapon = Math.random() < 0.5;
       
-      // Better rarity chances based on chest cost
-      let forceRarity: string | undefined;
-      if (chestCost >= 1000) {
-        // Legendary chest - guaranteed legendary or mythical
-        forceRarity = Math.random() < 0.3 ? 'mythical' : 'legendary';
-      } else if (chestCost >= 400) {
-        // Epic chest - guaranteed epic or better
-        const rand = Math.random();
-        if (rand < 0.1) forceRarity = 'mythical';
-        else if (rand < 0.3) forceRarity = 'legendary';
-        else forceRarity = 'epic';
-      } else if (chestCost >= 150) {
-        // Rare chest - guaranteed rare or better
-        const rand = Math.random();
-        if (rand < 0.05) forceRarity = 'mythical';
-        else if (rand < 0.15) forceRarity = 'legendary';
-        else if (rand < 0.4) forceRarity = 'epic';
-        else forceRarity = 'rare';
+      // Select rarity based on weights
+      const random = Math.random() * 100;
+      let cumulative = 0;
+      let selectedRarity = 'common';
+      
+      for (let j = 0; j < rarityWeights.length; j++) {
+        cumulative += rarityWeights[j];
+        if (random <= cumulative) {
+          selectedRarity = rarities[j];
+          break;
+        }
       }
       
-      const item = isWeapon ? generateWeapon(false, forceRarity) : generateArmor(false, forceRarity);
+      const item = isWeapon ? generateWeapon(false, selectedRarity) : generateArmor(false, selectedRarity);
       items.push(item);
       updateCollectionBook(item);
     }
@@ -703,7 +802,6 @@ export const useGameState = () => {
       items,
     };
 
-    // Apply streak multiplier to rewards
     const streakMultiplier = gameState.knowledgeStreak.multiplier;
     const finalBonusGems = Math.floor(bonusGems * streakMultiplier);
 
@@ -761,7 +859,6 @@ export const useGameState = () => {
   const startCombat = useCallback(() => {
     let enemy = generateEnemy(gameState.zone);
     
-    // Apply crazy mode modifiers to enemy
     if (gameState.gameMode.current === 'crazy') {
       enemy = {
         ...enemy,
@@ -778,10 +875,9 @@ export const useGameState = () => {
       inCombat: true,
       playerStats: { 
         ...prev.playerStats, 
-        hp: prev.playerStats.maxHp // Always restore to full HP when starting combat
+        hp: prev.playerStats.maxHp
       },
       combatLog: [`You encounter a ${enemy.name} in Zone ${enemy.zone}!`],
-      powerSkills: initialPowerSkills, // Reset power skills for new combat
     }));
   }, [gameState.zone, gameState.gameMode.current]);
 
@@ -789,7 +885,6 @@ export const useGameState = () => {
     setGameState(prev => {
       if (!prev.currentEnemy || !prev.inCombat) return prev;
 
-      // Update statistics and streaks
       if (category) {
         updateStatistics(category, hit);
       }
@@ -800,92 +895,50 @@ export const useGameState = () => {
       let newEnemyHp = prev.currentEnemy.hp;
       let combatEnded = false;
       let playerWon = false;
-      let newPowerSkills = { ...prev.powerSkills };
-      let newEnemy = { ...prev.currentEnemy };
 
       if (hit) {
-        // Update power skill counters
-        newPowerSkills.rage.attackCount++;
-        newPowerSkills.poison.attackCount++;
-
         let baseDamage = Math.max(1, prev.playerStats.atk - prev.currentEnemy.def);
         let finalDamage = baseDamage;
 
-        // Check for RAGE skill activation
-        if (newPowerSkills.rage.attackCount >= 3) {
-          newPowerSkills.rage.attackCount = 0;
-          newPowerSkills.rage.isActive = true;
-          newPowerSkills.rage.damageBonus = Math.floor(Math.random() * 66) + 10; // 10-75%
-          finalDamage = Math.floor(baseDamage * (1 + newPowerSkills.rage.damageBonus / 100));
-          
-          // Restore 10% health
-          const healthRestore = Math.floor(prev.playerStats.maxHp * 0.1);
-          newPlayerHp = Math.min(prev.playerStats.maxHp, prev.playerStats.hp + healthRestore);
-          
-          newCombatLog.push(`🔥 RAGE activated! +${newPowerSkills.rage.damageBonus}% damage and +${healthRestore} HP!`);
+        // Reduce durability of equipped items
+        const updatedInventory = { ...prev.inventory };
+        if (updatedInventory.currentWeapon && updatedInventory.currentWeapon.durability > 0) {
+          updatedInventory.currentWeapon = {
+            ...updatedInventory.currentWeapon,
+            durability: Math.max(0, updatedInventory.currentWeapon.durability - 1)
+          };
+          updatedInventory.weapons = updatedInventory.weapons.map(w => 
+            w.id === updatedInventory.currentWeapon?.id ? updatedInventory.currentWeapon : w
+          );
         }
-
-        // Check for POISON skill activation
-        if (newPowerSkills.poison.attackCount >= 5) {
-          newPowerSkills.poison.attackCount = 0;
-          newPowerSkills.poison.isActive = true;
-          newEnemy.isPoisoned = true;
-          newEnemy.poisonTurns = 3;
-          newCombatLog.push(`💀 POISON activated! Enemy is poisoned for 3 turns!`);
-        }
-
-        // Apply poison damage bonus if enemy is poisoned
-        if (newEnemy.isPoisoned) {
-          finalDamage = Math.floor(finalDamage * 1.2); // +20% damage
+        if (updatedInventory.currentArmor && updatedInventory.currentArmor.durability > 0) {
+          updatedInventory.currentArmor = {
+            ...updatedInventory.currentArmor,
+            durability: Math.max(0, updatedInventory.currentArmor.durability - 1)
+          };
+          updatedInventory.armor = updatedInventory.armor.map(a => 
+            a.id === updatedInventory.currentArmor?.id ? updatedInventory.currentArmor : a
+          );
         }
 
         newEnemyHp = Math.max(0, prev.currentEnemy.hp - finalDamage);
-        
-        if (newPowerSkills.rage.isActive) {
-          newCombatLog.push(`You deal ${finalDamage} RAGE damage to the ${prev.currentEnemy.name}!`);
-          newPowerSkills.rage.isActive = false;
-        } else {
-          newCombatLog.push(`You deal ${finalDamage} damage to the ${prev.currentEnemy.name}!`);
-        }
+        newCombatLog.push(`You deal ${finalDamage} damage to the ${prev.currentEnemy.name}!`);
         
         triggerVisualEffect('text', { text: `-${finalDamage}`, color: 'text-red-400' });
-
-        // Update poison turns
-        if (newEnemy.isPoisoned) {
-          newEnemy.poisonTurns = Math.max(0, newEnemy.poisonTurns - 1);
-          if (newEnemy.poisonTurns === 0) {
-            newEnemy.isPoisoned = false;
-            newCombatLog.push(`The poison wears off!`);
-          }
-        }
-
-        // Check for HEALTH skill activation
-        const hpPercentage = newPlayerHp / prev.playerStats.maxHp;
-        if (hpPercentage < 0.3 && !newPowerSkills.health.isTriggered) {
-          newPowerSkills.health.isTriggered = true;
-          newPowerSkills.health.isActive = true;
-          newPowerSkills.health.attacksRemaining = 3;
-          newCombatLog.push(`💚 HEALTH skill activated! You will heal after each attack for 3 turns!`);
-        }
-
-        // Apply health skill healing
-        if (newPowerSkills.health.isActive && newPowerSkills.health.attacksRemaining > 0) {
-          const healAmount = Math.floor(prev.playerStats.maxHp * 0.1);
-          newPlayerHp = Math.min(prev.playerStats.maxHp, newPlayerHp + healAmount);
-          newPowerSkills.health.attacksRemaining--;
-          newCombatLog.push(`💚 Health skill heals you for ${healAmount} HP!`);
-          
-          if (newPowerSkills.health.attacksRemaining === 0) {
-            newPowerSkills.health.isActive = false;
-            newCombatLog.push(`Health skill effect ends.`);
-          }
-        }
         
         if (newEnemyHp <= 0) {
           combatEnded = true;
           playerWon = true;
           newCombatLog.push(`You defeated the ${prev.currentEnemy.name}!`);
         }
+
+        return {
+          ...prev,
+          currentEnemy: { ...prev.currentEnemy, hp: newEnemyHp },
+          playerStats: { ...prev.playerStats, hp: newPlayerHp },
+          combatLog: newCombatLog,
+          inventory: updatedInventory,
+        };
       } else {
         const damage = Math.max(1, prev.currentEnemy.atk - prev.playerStats.def);
         newPlayerHp = Math.max(0, prev.playerStats.hp - damage);
@@ -902,7 +955,6 @@ export const useGameState = () => {
 
       if (combatEnded) {
         if (playerWon) {
-          // Apply game mode multipliers
           let coinMultiplier = 1;
           let gemMultiplier = 1;
           
@@ -912,12 +964,11 @@ export const useGameState = () => {
               gemMultiplier = 1.1;
               break;
             case 'crazy':
-              coinMultiplier = 6; // +500% = 6x total
+              coinMultiplier = 6;
               gemMultiplier = 6;
               break;
           }
 
-          // Apply streak multiplier
           coinMultiplier *= prev.knowledgeStreak.multiplier;
           gemMultiplier *= prev.knowledgeStreak.multiplier;
 
@@ -941,7 +992,6 @@ export const useGameState = () => {
             currentEnemy: null,
             inCombat: false,
             combatLog: newCombatLog,
-            powerSkills: initialPowerSkills, // Reset power skills after combat
             statistics: {
               ...prev.statistics,
               zonesReached: Math.max(prev.statistics.zonesReached, newZone),
@@ -950,28 +1000,24 @@ export const useGameState = () => {
             },
           };
         } else {
-          // Handle defeat
           return {
             ...prev,
             currentEnemy: null,
             inCombat: false,
             combatLog: newCombatLog,
             playerStats: { ...prev.playerStats, hp: newPlayerHp },
-            powerSkills: initialPowerSkills, // Reset power skills after defeat
           };
         }
       }
 
       return {
         ...prev,
-        currentEnemy: { ...newEnemy, hp: newEnemyHp },
+        currentEnemy: { ...prev.currentEnemy, hp: newEnemyHp },
         playerStats: { ...prev.playerStats, hp: newPlayerHp },
         combatLog: newCombatLog,
-        powerSkills: newPowerSkills,
       };
     });
 
-    // Check achievements after combat
     setTimeout(checkAndUnlockAchievements, 100);
   }, [updateStatistics, updateKnowledgeStreak, triggerVisualEffect, checkAndUnlockAchievements]);
 
@@ -1015,5 +1061,7 @@ export const useGameState = () => {
     checkAndUnlockAchievements,
     mineGem,
     purchaseMiningTool,
+    redeemPromoCode,
+    discardItem,
   };
 };

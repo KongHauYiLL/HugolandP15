@@ -1,7 +1,7 @@
 import React from 'react';
 import { Inventory as InventoryType, Weapon, Armor } from '../types/game';
-import { Sword, Shield, Gem, Star, Coins, Sparkles } from 'lucide-react';
-import { getRarityColor, getRarityBorder, getRarityGlow } from '../utils/gameUtils';
+import { Sword, Shield, Gem, Star, Coins, Sparkles, Wrench } from 'lucide-react';
+import { getRarityColor, getRarityBorder, getRarityGlow, getRepairCost } from '../utils/gameUtils';
 
 interface InventoryProps {
   inventory: InventoryType;
@@ -24,6 +24,20 @@ export const Inventory: React.FC<InventoryProps> = ({
   onSellWeapon,
   onSellArmor,
 }) => {
+  const getDurabilityColor = (durability: number, maxDurability: number) => {
+    const percentage = durability / maxDurability;
+    if (percentage > 0.7) return 'text-green-400';
+    if (percentage > 0.3) return 'text-yellow-400';
+    return 'text-red-400';
+  };
+
+  const getDurabilityBarColor = (durability: number, maxDurability: number) => {
+    const percentage = durability / maxDurability;
+    if (percentage > 0.7) return 'bg-green-500';
+    if (percentage > 0.3) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
   return (
     <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-4 sm:p-6 rounded-lg shadow-2xl">
       <div className="text-center mb-4 sm:mb-6">
@@ -53,6 +67,28 @@ export const Inventory: React.FC<InventoryProps> = ({
               </div>
               <p className="text-white text-sm sm:text-base">ATK: {inventory.currentWeapon.baseAtk + (inventory.currentWeapon.level - 1) * 10}</p>
               <p className="text-gray-300 text-xs sm:text-sm">Level {inventory.currentWeapon.level}</p>
+              
+              {/* Durability */}
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-gray-300">Durability</span>
+                  <span className={getDurabilityColor(inventory.currentWeapon.durability, inventory.currentWeapon.maxDurability)}>
+                    {inventory.currentWeapon.durability}/{inventory.currentWeapon.maxDurability}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-300 ${getDurabilityBarColor(inventory.currentWeapon.durability, inventory.currentWeapon.maxDurability)}`}
+                    style={{ width: `${(inventory.currentWeapon.durability / inventory.currentWeapon.maxDurability) * 100}%` }}
+                  />
+                </div>
+                {inventory.currentWeapon.durability < inventory.currentWeapon.maxDurability && (
+                  <p className="text-xs text-yellow-400 mt-1">
+                    <Wrench className="w-3 h-3 inline mr-1" />
+                    Repair cost: {getRepairCost(inventory.currentWeapon)} gems
+                  </p>
+                )}
+              </div>
             </div>
           ) : (
             <p className="text-gray-400 text-sm">No weapon equipped</p>
@@ -76,6 +112,28 @@ export const Inventory: React.FC<InventoryProps> = ({
               </div>
               <p className="text-white text-sm sm:text-base">DEF: {inventory.currentArmor.baseDef + (inventory.currentArmor.level - 1) * 5}</p>
               <p className="text-gray-300 text-xs sm:text-sm">Level {inventory.currentArmor.level}</p>
+              
+              {/* Durability */}
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-gray-300">Durability</span>
+                  <span className={getDurabilityColor(inventory.currentArmor.durability, inventory.currentArmor.maxDurability)}>
+                    {inventory.currentArmor.durability}/{inventory.currentArmor.maxDurability}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full transition-all duration-300 ${getDurabilityBarColor(inventory.currentArmor.durability, inventory.currentArmor.maxDurability)}`}
+                    style={{ width: `${(inventory.currentArmor.durability / inventory.currentArmor.maxDurability) * 100}%` }}
+                  />
+                </div>
+                {inventory.currentArmor.durability < inventory.currentArmor.maxDurability && (
+                  <p className="text-xs text-yellow-400 mt-1">
+                    <Wrench className="w-3 h-3 inline mr-1" />
+                    Repair cost: {getRepairCost(inventory.currentArmor)} gems
+                  </p>
+                )}
+              </div>
             </div>
           ) : (
             <p className="text-gray-400 text-sm">No armor equipped</p>
@@ -112,6 +170,23 @@ export const Inventory: React.FC<InventoryProps> = ({
                     <Star className="w-3 h-3 sm:w-4 sm:h-4" />
                     Level {weapon.level}
                   </div>
+                  
+                  {/* Durability */}
+                  <div className="mb-2">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-300">Durability</span>
+                      <span className={getDurabilityColor(weapon.durability, weapon.maxDurability)}>
+                        {weapon.durability}/{weapon.maxDurability}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-1">
+                      <div 
+                        className={`h-1 rounded-full transition-all duration-300 ${getDurabilityBarColor(weapon.durability, weapon.maxDurability)}`}
+                        style={{ width: `${(weapon.durability / weapon.maxDurability) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                  
                   <div className="flex items-center gap-1 text-xs sm:text-sm text-yellow-400">
                     <Coins className="w-3 h-3 sm:w-4 sm:h-4" />
                     Sell: {weapon.sellPrice}
@@ -190,6 +265,23 @@ export const Inventory: React.FC<InventoryProps> = ({
                     <Star className="w-3 h-3 sm:w-4 sm:h-4" />
                     Level {armor.level}
                   </div>
+                  
+                  {/* Durability */}
+                  <div className="mb-2">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-300">Durability</span>
+                      <span className={getDurabilityColor(armor.durability, armor.maxDurability)}>
+                        {armor.durability}/{armor.maxDurability}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-1">
+                      <div 
+                        className={`h-1 rounded-full transition-all duration-300 ${getDurabilityBarColor(armor.durability, armor.maxDurability)}`}
+                        style={{ width: `${(armor.durability / armor.maxDurability) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                  
                   <div className="flex items-center gap-1 text-xs sm:text-sm text-yellow-400">
                     <Coins className="w-3 h-3 sm:w-4 sm:h-4" />
                     Sell: {armor.sellPrice}
