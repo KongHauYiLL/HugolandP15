@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from 'react';
 import { GameState, PlayerStats, Inventory, Enemy, Weapon, Armor, ChestReward, Research, Achievement, CollectionBook, KnowledgeStreak, GameMode, Statistics, CheatSettings, Mining } from '../types/game';
 import { generateWeapon, generateArmor, generateEnemy, generateMythicalWeapon, generateMythicalArmor, calculateResearchBonus, calculateResearchCost, getChestRarityWeights } from '../utils/gameUtils';
 import { checkAchievements, initializeAchievements } from '../utils/achievements';
-import { getPowerSkillForTier } from '../utils/powerSkills';
 import AsyncStorage from '../utils/storage';
 
 const STORAGE_KEY = 'hugoland_game_state';
