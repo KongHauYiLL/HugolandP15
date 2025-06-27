@@ -23,7 +23,7 @@ export const PromoCode: React.FC<PromoCodeProps> = ({ promoCodes, onRedeemCode }
       setMessage({ text: 'Promo code redeemed successfully!', type: 'success' });
       setInputCode('');
     } else {
-      setMessage({ text: 'Invalid or already used promo code', type: 'error' });
+      setMessage({ text: 'Wrong code', type: 'error' }); // Changed this message
     }
 
     setTimeout(() => setMessage(null), 3000);
