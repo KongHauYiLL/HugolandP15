@@ -20,10 +20,10 @@ export const PromoCode: React.FC<PromoCodeProps> = ({ promoCodes, onRedeemCode }
     const success = onRedeemCode(inputCode.toUpperCase());
     
     if (success) {
-      setMessage({ text: 'Promo code redeemed successfully!', type: 'success' });
+      setMessage({ text: 'Promo code processed successfully, check your hero page to see the rewards!', type: 'success' });
       setInputCode('');
     } else {
-      setMessage({ text: 'Wrong code', type: 'error' });
+      setMessage({ text: 'Fuck off you black nigger'', type: 'error' });
       setInputCode('');
     }
 
