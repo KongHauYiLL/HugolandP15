@@ -184,15 +184,6 @@ export const Shop: React.FC<ShopProps> = ({ coins, onOpenChest, onDiscardItem, i
                           <span>Upgrade: {(item as any).upgradeCost}</span>
                         </div>
                       </div>
-                      
-                      {/* Discard Button */}
-                      <button
-                        onClick={() => handleDiscardItem(item)}
-                        className="w-full py-1 bg-red-600 text-white text-xs rounded hover:bg-red-500 transition-colors flex items-center justify-center gap-1"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        Discard Item
-                      </button>
                     </div>
                   </div>
                 ))
