@@ -76,22 +76,6 @@ export const PromoCode: React.FC<PromoCodeProps> = ({ promoCodes, onRedeemCode }
           </div>
         )}
       </div>
-
-
-      {/* Used Codes */}
-      {promoCodes.usedCodes.length > 0 && (
-        <div>
-          <h3 className="text-white font-semibold mb-3 text-sm sm:text-base">Redeemed Codes</h3>
-          <div className="bg-black/20 p-3 rounded-lg">
-            <div className="flex flex-wrap gap-2">
-              {promoCodes.usedCodes.map((code, index) => (
-                <span
-                  key={index}
-                  className="px-2 py-1 bg-green-600 text-white text-xs rounded font-semibold"
-                >
-                  {code}
-                </span>
-              ))}
             </div>
           </div>
         </div>
