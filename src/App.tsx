@@ -17,7 +17,7 @@ import { FloatingIcons } from './components/FloatingIcons';
 import { FloatingText, ScreenShake } from './components/VisualEffects';
 import { Shield, Package, User, Play, RotateCcw, Brain, Crown, Trophy, Book, BarChart3, Settings, Pickaxe, Gift } from 'lucide-react';
 
-type GameView = 'stats' | 'shop' | 'inventory' | 'research' | 'mining' | 'promo';
+type GameView = 'stats' | 'shop' | 'inventory' | 'research' | 'mining';
 type ModalView = 'achievements' | 'collection' | 'statistics' | 'gameMode' | 'pokyegMarket' | 'tutorial' | 'cheats' | 'resetConfirm' | null;
 
 function App() {
