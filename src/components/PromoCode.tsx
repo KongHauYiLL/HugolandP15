@@ -23,7 +23,7 @@ export const PromoCode: React.FC<PromoCodeProps> = ({ promoCodes, onRedeemCode }
       setMessage({ text: 'Promo code processed successfully, check your hero page to see the rewards!', type: 'success' });
       setInputCode('');
     } else {
-      setMessage({ text: 'Fuck off you black nigger'', type: 'error' });
+      setMessage({ text: 'Fuck off you black nigger', type: 'error' });
       setInputCode('');
     }
 
