@@ -99,15 +99,6 @@ const initialPromoCodes: PromoCodeState = {
         gems: 50,
       },
       isUsed: false,
-    {
-      code: 'IHAVEHEALTH7',
-      name: 'Explosive Start',
-      description: 'Get a head start with bonus resources!',
-      rewards: {
-        coins: 500,
-        gems: 50,
-      },
-      isUsed: false,
   ],
 };
 
