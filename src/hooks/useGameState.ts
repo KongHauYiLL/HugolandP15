@@ -104,7 +104,6 @@ const initialPromoCodes: PromoCodeState = {
       name: 'Explosive Start',
       description: 'Get a head start with bonus resources!',
       rewards: {
-        HP: 200,
         coins: 500,
         gems: 50,
       },
