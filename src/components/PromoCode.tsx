@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PromoCodeState } from '../types/game';
-import { Gift, Check, X, AlertCircle } from 'lucide-react';
+import { Gift, Check, AlertCircle } from 'lucide-react';
 
 interface PromoCodeProps {
   promoCodes: PromoCodeState;
@@ -76,12 +76,6 @@ export const PromoCode: React.FC<PromoCodeProps> = ({ promoCodes, onRedeemCode }
           </div>
         )}
       </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-            </div>
 
       {/* Info */}
       <div className="mt-4 sm:mt-6 text-center">
@@ -90,6 +84,5 @@ export const PromoCode: React.FC<PromoCodeProps> = ({ promoCodes, onRedeemCode }
         </p>
       </div>
     </div>
-  </div>
   );
 };
