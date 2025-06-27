@@ -100,6 +100,16 @@ const initialPromoCodes: PromoCodeState = {
       },
       isUsed: false,
     },
+    {
+      code: 'NT',
+      name: 'Explosive Start',
+      description: 'Get a head start with bonus resources!',
+      rewards: {
+        coins: 500,
+        gems: 50,
+      },
+      isUsed: false,
+    },
   ],
 };
 
