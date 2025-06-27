@@ -20,7 +20,7 @@ export const PromoCode: React.FC<PromoCodeProps> = ({ promoCodes, onRedeemCode }
     const success = onRedeemCode(inputCode.toUpperCase());
     
     if (success) {
-      setMessage({ text: 'Promo code redeemed successfully!', type: 'success' });
+      setMessage({ text: "Promo code redeemed successfully! The server won't tell me if you're capping so just bear with me.", type: 'success' });
       setInputCode('');
     } else {
       setMessage({ text: 'Wrong code', type: 'error' }); // Changed this message
