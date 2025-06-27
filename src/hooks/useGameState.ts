@@ -101,7 +101,7 @@ const initialPromoCodes: PromoCodeState = {
       isUsed: false,
     },
     {
-      code: "ImAMiner",
+      code: "IMAMINER",
       name: 'Large Vein',
       description: 'Get a head start with bonus resources!',
       rewards: {
