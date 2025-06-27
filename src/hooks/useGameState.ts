@@ -101,8 +101,8 @@ const initialPromoCodes: PromoCodeState = {
       isUsed: false,
     },
     {
-      code: 'NT',
-      name: 'Explosive Start',
+      code: "ImAMiner",
+      name: 'Large Vein',
       description: 'Get a head start with bonus resources!',
       rewards: {
         coins: 500,
