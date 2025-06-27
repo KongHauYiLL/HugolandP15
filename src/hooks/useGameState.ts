@@ -108,7 +108,6 @@ const initialPromoCodes: PromoCodeState = {
         gems: 50,
       },
       isUsed: false,
-    },
   ],
 };
 
