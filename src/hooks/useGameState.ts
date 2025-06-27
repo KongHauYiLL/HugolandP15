@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { GameState, PlayerStats, Inventory, Enemy, Weapon, Armor, ChestReward, Research, Achievement, CollectionBook, KnowledgeStreak, GameMode, Statistics, CheatSettings, Mining } from '../types/game';
+import { GameState, PlayerStats, Inventory, Enemy, Weapon, Armor, ChestReward, Research, Achievement, CollectionBook, KnowledgeStreak, GameMode, Statistics, CheatSettings, Mining, PowerSkill } from '../types/game';
 import { generateWeapon, generateArmor, generateEnemy, generateMythicalWeapon, generateMythicalArmor, calculateResearchBonus, calculateResearchCost, getChestRarityWeights } from '../utils/gameUtils';
 import { checkAchievements, initializeAchievements } from '../utils/achievements';
+import { getPowerSkillForTier } from '../utils/powerSkills';
 import AsyncStorage from '../utils/storage';
 
 const STORAGE_KEY = 'hugoland_game_state';
@@ -925,35 +926,13 @@ export const useGameState = () => {
         
         triggerVisualEffect('text', { text: `-${finalDamage}`, color: 'text-red-400' });
         
+        // FIXED: Check if enemy is defeated immediately after taking damage
         if (newEnemyHp <= 0) {
           combatEnded = true;
           playerWon = true;
           newCombatLog.push(`You defeated the ${prev.currentEnemy.name}!`);
-        }
-
-        return {
-          ...prev,
-          currentEnemy: { ...prev.currentEnemy, hp: newEnemyHp },
-          playerStats: { ...prev.playerStats, hp: newPlayerHp },
-          combatLog: newCombatLog,
-          inventory: updatedInventory,
-        };
-      } else {
-        const damage = Math.max(1, prev.currentEnemy.atk - prev.playerStats.def);
-        newPlayerHp = Math.max(0, prev.playerStats.hp - damage);
-        newCombatLog.push(`You missed! The ${prev.currentEnemy.name} deals ${damage} damage to you!`);
-        
-        triggerVisualEffect('shake');
-        
-        if (newPlayerHp <= 0) {
-          combatEnded = true;
-          playerWon = false;
-          newCombatLog.push(`You were defeated by the ${prev.currentEnemy.name}...`);
-        }
-      }
-
-      if (combatEnded) {
-        if (playerWon) {
+          
+          // Handle victory rewards immediately
           let coinMultiplier = 1;
           let gemMultiplier = 1;
           
@@ -991,6 +970,7 @@ export const useGameState = () => {
             currentEnemy: null,
             inCombat: false,
             combatLog: newCombatLog,
+            inventory: updatedInventory,
             statistics: {
               ...prev.statistics,
               zonesReached: Math.max(prev.statistics.zonesReached, newZone),
@@ -998,7 +978,27 @@ export const useGameState = () => {
               gemsEarned: prev.statistics.gemsEarned + gemsEarned,
             },
           };
-        } else {
+        }
+
+        return {
+          ...prev,
+          currentEnemy: { ...prev.currentEnemy, hp: newEnemyHp },
+          playerStats: { ...prev.playerStats, hp: newPlayerHp },
+          combatLog: newCombatLog,
+          inventory: updatedInventory,
+        };
+      } else {
+        const damage = Math.max(1, prev.currentEnemy.atk - prev.playerStats.def);
+        newPlayerHp = Math.max(0, prev.playerStats.hp - damage);
+        newCombatLog.push(`You missed! The ${prev.currentEnemy.name} deals ${damage} damage to you!`);
+        
+        triggerVisualEffect('shake');
+        
+        if (newPlayerHp <= 0) {
+          combatEnded = true;
+          playerWon = false;
+          newCombatLog.push(`You were defeated by the ${prev.currentEnemy.name}...`);
+          
           return {
             ...prev,
             currentEnemy: null,
@@ -1007,14 +1007,14 @@ export const useGameState = () => {
             playerStats: { ...prev.playerStats, hp: newPlayerHp },
           };
         }
-      }
 
-      return {
-        ...prev,
-        currentEnemy: { ...prev.currentEnemy, hp: newEnemyHp },
-        playerStats: { ...prev.playerStats, hp: newPlayerHp },
-        combatLog: newCombatLog,
-      };
+        return {
+          ...prev,
+          currentEnemy: { ...prev.currentEnemy, hp: newEnemyHp },
+          playerStats: { ...prev.playerStats, hp: newPlayerHp },
+          combatLog: newCombatLog,
+        };
+      }
     });
 
     setTimeout(checkAndUnlockAchievements, 100);

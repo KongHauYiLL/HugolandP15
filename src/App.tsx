@@ -13,11 +13,12 @@ import { PokyegMarket } from './components/PokyegMarket';
 import { Tutorial } from './components/Tutorial';
 import { CheatPanel } from './components/CheatPanel';
 import { Mining } from './components/Mining';
+import { PromoCode } from './components/PromoCode';
 import { FloatingIcons } from './components/FloatingIcons';
 import { FloatingText, ScreenShake } from './components/VisualEffects';
 import { Shield, Package, User, Play, RotateCcw, Brain, Crown, Trophy, Book, BarChart3, Settings, Pickaxe, Gift } from 'lucide-react';
 
-type GameView = 'stats' | 'shop' | 'inventory' | 'research' | 'mining';
+type GameView = 'stats' | 'shop' | 'inventory' | 'research' | 'mining' | 'promo';
 type ModalView = 'achievements' | 'collection' | 'statistics' | 'gameMode' | 'pokyegMarket' | 'tutorial' | 'cheats' | 'resetConfirm' | null;
 
 function App() {
@@ -458,6 +459,7 @@ function App() {
               { id: 'shop', label: 'Shop', icon: Package },
               { id: 'inventory', label: 'Inventory', icon: Shield },
               { id: 'mining', label: 'Mining', icon: Pickaxe },
+              { id: 'promo', label: 'Promo', icon: Gift },
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}

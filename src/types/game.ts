@@ -175,7 +175,7 @@ export interface CheatSettings {
 }
 
 export interface Mining {
-  efficiency: number; // How many clicks per mine action
+  efficiency: number; // How many gems per mine action
   tools: {
     basic_pickaxe: boolean;
     steel_pickaxe: boolean;
@@ -210,3 +210,5 @@ export interface PromoCode {
   };
   isUsed: boolean;
 }
+
+export type PowerSkills = PowerSkill[];
