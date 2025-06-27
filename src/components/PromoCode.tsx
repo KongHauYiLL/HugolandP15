@@ -19,9 +19,6 @@ export const PromoCode: React.FC<PromoCodeProps> = ({ promoCodes, onRedeemCode }
 
     const success = onRedeemCode(inputCode.toUpperCase());
 
-    setTimeout(() => setMessage(null), 3000);
-  };
-
   return (
     <div className="bg-gradient-to-br from-green-900 via-emerald-900 to-teal-900 p-4 sm:p-6 rounded-lg shadow-2xl">
       <div className="text-center mb-4 sm:mb-6">
