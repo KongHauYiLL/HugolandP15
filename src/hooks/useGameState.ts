@@ -105,8 +105,7 @@ const initialPromoCodes: PromoCodeState = {
       name: 'Large Vein',
       description: 'Get a head start with bonus resources!',
       rewards: {
-        coins: 500,
-        gems: 50,
+        gems: 200,
       },
       isUsed: false,
     },
