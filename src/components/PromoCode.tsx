@@ -81,6 +81,8 @@ export const PromoCode: React.FC<PromoCodeProps> = ({ promoCodes, onRedeemCode }
         </div>
       )}
 
+            </div>
+
       {/* Info */}
       <div className="mt-4 sm:mt-6 text-center">
         <p className="text-gray-400 text-xs sm:text-sm">
