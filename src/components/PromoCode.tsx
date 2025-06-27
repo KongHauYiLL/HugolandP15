@@ -90,5 +90,6 @@ export const PromoCode: React.FC<PromoCodeProps> = ({ promoCodes, onRedeemCode }
         </p>
       </div>
     </div>
+  </div>
   );
 };
